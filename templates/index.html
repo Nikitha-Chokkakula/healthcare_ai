@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health AI Researcher - Blog & Research</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-brain text-3xl"></i>
+                    <div>
+                        <h1 class="text-3xl font-bold">Healthcare AI Expert</h1>
+                        <p class="text-blue-100">Your AI Healthcare Knowledge Assistant</p>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <span class="text-blue-100">Powered by CrewAI</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Research Form -->
+        <div class="max-w-4xl mx-auto mb-8">
+            <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-search text-blue-600 mr-2"></i>
+                    Research Query
+                </h2>
+                <form id="researchForm" class="space-y-4">
+                    <div>
+                        <label for="query" class="block text-sm font-medium text-gray-700 mb-2">
+                            Ask me anything about AI in healthcare!
+                        </label>
+                        <textarea 
+                            id="query" 
+                            name="query" 
+                            rows="4" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="e.g., How does AI help in cancer detection? What are the latest AI tools for drug discovery? Explain machine learning in medical imaging..."
+                        >What are the latest AI advancements in healthcare?</textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button 
+                            type="submit" 
+                            id="submitBtn"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 flex items-center space-x-2"
+                        >
+                            <i class="fas fa-brain"></i>
+                            <span>Ask AI Expert</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden max-w-4xl mx-auto mb-8">
+            <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="loading">
+                    <i class="fas fa-cog text-4xl text-blue-600 mb-4"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Analyzing...</h3>
+                <p class="text-gray-600">Our Healthcare AI Expert is researching your question. This may take a moment.</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="max-w-4xl mx-auto">
+            <!-- Results will be dynamically inserted here -->
+        </div>
+
+        <!-- Recent Research History -->
+        <div id="historySection" class="max-w-4xl mx-auto mt-8">
+                                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                                <i class="fas fa-history text-blue-600 mr-2"></i>
+                                Recent Questions
+                            </h3>
+            <div id="historyList" class="space-y-4">
+                <!-- History items will be added here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 Health AI Researcher. Built with CrewAI and OpenAI.</p>
+        </div>
+    </footer>
+
+    <script>
+        let researchHistory = [];
+
+        document.getElementById('researchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('query').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingState = document.getElementById('loadingState');
+            const resultsSection = document.getElementById('resultsSection');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            loadingState.classList.remove('hidden');
+            resultsSection.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                    addToHistory(data);
+                } else {
+                    displayError(data.error);
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                // Hide loading state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-brain"></i><span>Ask AI Expert</span>';
+                loadingState.classList.add('hidden');
+            }
+        });
+
+        function displayResults(data) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            const resultHtml = `
+                <div class="bg-white rounded-lg shadow-lg p-6 card-hover fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                            AI Expert Response
+                        </h2>
+                        <span class="text-sm text-gray-500">${new Date(data.timestamp).toLocaleString()}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Query:</h3>
+                        <p class="text-gray-600 bg-gray-50 p-3 rounded">${data.query}</p>
+                    </div>
+                    
+                    <div class="prose max-w-none">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-2">Expert Analysis:</h3>
+                        <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                            <pre class="whitespace-pre-wrap text-gray-800 font-mono text-sm">${data.result}</pre>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="copyToClipboard('${data.result.replace(/'/g, "\\'")}')" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2">
+                            <i class="fas fa-copy"></i>
+                            <span>Copy Results</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            resultsSection.innerHTML = resultHtml;
+        }
+
+        function displayError(error) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            const errorHtml = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6 fade-in">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3"></i>
+                        <div>
+                            <h3 class="text-lg font-semibold text-red-800">Error</h3>
+                            <p class="text-red-700">${error}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultsSection.innerHTML = errorHtml;
+        }
+
+        function addToHistory(data) {
+            researchHistory.unshift({
+                ...data,
+                id: Date.now()
+            });
+            
+            // Keep only last 5 items
+            if (researchHistory.length > 5) {
+                researchHistory = researchHistory.slice(0, 5);
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            
+            if (researchHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fas fa-inbox text-4xl mb-4"></i>
+                        <p>No questions asked yet. Ask your first question!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const historyHtml = researchHistory.map(item => `
+                <div class="bg-white rounded-lg shadow p-4 card-hover">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-gray-800">${item.query.substring(0, 50)}${item.query.length > 50 ? '...' : ''}</h4>
+                        <span class="text-xs text-gray-500">${new Date(item.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">${item.result.substring(0, 100)}${item.result.length > 100 ? '...' : ''}</p>
+                    <div class="mt-2">
+                        <button onclick="viewHistoryItem(${item.id})" 
+                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            View Full Response
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            historyList.innerHTML = historyHtml;
+        }
+
+        function viewHistoryItem(id) {
+            const item = researchHistory.find(h => h.id === id);
+            if (item) {
+                displayResults(item);
+                // Scroll to results
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success message
+                const button = event.target.closest('button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
+                button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+                button.classList.add('bg-green-600');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-green-600');
+                    button.classList.add('bg-gray-600', 'hover:bg-gray-700');
+                }, 2000);
+            });
+        }
+
+        // Initialize history display
+        updateHistoryDisplay();
+    </script>
+</body>
+</html> 
